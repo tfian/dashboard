@@ -4,17 +4,71 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 
-st.set_page_config(page_title="WHO Road Traffic Dashboard", layout="wide")
+st.set_page_config(page_title="EU Injury Dashboard", layout="wide")
 
-# Load data
+# Load data for all injury categories
 @st.cache_data
 def load_data():
-    file_path = "WHO_Road_Traffic_Injuries_Europe.xlsx"
-    df = pd.read_excel(file_path, sheet_name="Tabelle1")
-    df = df[df['Number'].notna()]  # Remove rows with missing values in Number
-    return df
+    # Road Traffic Accidents
+    traffic_file_path = "WHO_Road_Traffic_Injuries_Europe.xlsx"
+    traffic_df = pd.read_excel(traffic_file_path, sheet_name="Tabelle1")
+    traffic_df = traffic_df[traffic_df['Number'].notna()]
 
-df = load_data()
+    # Poisonings
+    poisoning_file_path = "WHO_Poisonings_Europe.xlsx"
+    poisoning_df = pd.read_excel(poisoning_file_path, sheet_name="Tabelle1")
+    poisoning_df = poisoning_df[poisoning_df['Number'].notna()]
+
+    # Falls
+    falls_file_path = "WHO_Falls_Europe.xlsx"
+    falls_df = pd.read_excel(falls_file_path, sheet_name="Tabelle1")
+    falls_df = falls_df[falls_df['Number'].notna()]
+
+    # Fires
+    fires_file_path = "WHO_Fires_Europe.xlsx"
+    fires_df = pd.read_excel(fires_file_path, sheet_name="Tabelle1")
+    fires_df = fires_df[fires_df['Number'].notna()]
+
+    # Drownings
+    drownings_file_path = "WHO_Drownings_Europe.xlsx"
+    drownings_df = pd.read_excel(drownings_file_path, sheet_name="Tabelle1")
+    drownings_df = drownings_df[drownings_df['Number'].notna()]
+
+    # Mechanical Forces
+    mechanical_file_path = "WHO_Mechanical_Forces_Europe.xlsx"
+    mechanical_df = pd.read_excel(mechanical_file_path, sheet_name="Tabelle1")
+    mechanical_df = mechanical_df[mechanical_df['Number'].notna()]
+
+    # Natural Disasters
+    disasters_file_path = "WHO_Natural_Disasters_Europe.xlsx"
+    disasters_df = pd.read_excel(disasters_file_path, sheet_name="Tabelle1")
+    disasters_df = disasters_df[disasters_df['Number'].notna()]
+
+    # Other Unintentional Injuries
+    other_file_path = "WHO_Other_Unintentional_Injuries_Europe.xlsx"
+    other_df = pd.read_excel(other_file_path, sheet_name="Tabelle1")
+    other_df = other_df[other_df['Number'].notna()]
+
+    return {
+        "Road Traffic Accidents": traffic_df,
+        "Poisonings": poisoning_df,
+        "Falls": falls_df,
+        "Fires": fires_df,
+        "Drownings": drownings_df,
+        "Mechanical Forces": mechanical_df,
+        "Natural Disasters": disasters_df,
+        "Other Unintentional Injuries": other_df,
+    }
+
+# Load all datasets
+data_dict = load_data()
+
+# Sidebar for menu selection
+st.sidebar.header("Select Statistic Type")
+statistic_type = st.sidebar.selectbox("Choose a statistic", list(data_dict.keys()))
+
+# Select the appropriate dataset based on the selection
+df = data_dict[statistic_type]
 
 # Sidebar filters
 st.sidebar.header("Filters")
@@ -30,9 +84,6 @@ selected_sex = st.sidebar.selectbox("Sex", sexes)
 filtered_df = df[(df['Country Name'].isin(selected_countries)) &
                  (df['Year'].between(*selected_years)) &
                  (df['Sex'] == selected_sex)]
-
-st.title("\U0001F6E3 WHO Road Traffic Injury Dashboard")
-st.markdown("Data from the WHO Mortality Database – Deaths from Road Traffic Accidents in Europe")
 
 # KPIs
 col1, col2, col3 = st.columns(3)
@@ -51,7 +102,7 @@ trend_data = filtered_df.groupby(['Year', 'Country Name'])['Number'].sum().unsta
 trend_data.plot(ax=ax1, marker='o')
 ax1.set_ylabel("Number of Deaths")
 ax1.set_xlabel("Year")
-ax1.set_title("Road Traffic Deaths Over Time")
+ax1.set_title(f"{statistic_type} Deaths Over Time")
 st.pyplot(fig1)
 
 # 2. Country comparison
@@ -75,7 +126,7 @@ if len(age_summary) == 1:
     ax3.set_title(f"Deaths by Age Group in {age_summary.index[0]}")
 else:
     age_summary.T.plot(kind='bar', ax=ax3)
-    ax3.set_title("Deaths by Age Group and Country")
+    ax3.set_title(f"Deaths by Age Group and Country")
 ax3.set_ylabel("Number of Deaths")
 ax3.set_xlabel("Age Group")
 ax3.legend(title="Country")
@@ -94,7 +145,7 @@ def convert_df_to_csv(df):
 csv_data = convert_df_to_csv(filtered_df)
 st.download_button(label="Download CSV of filtered data",
                    data=csv_data,
-                   file_name='filtered_road_traffic_data.csv',
+                   file_name=f'filtered_{statistic_type.replace(" ", "_").lower()}_data.csv',
                    mime='text/csv')
 
 buffer = BytesIO()
@@ -102,7 +153,7 @@ fig3.savefig(buffer, format="pdf")
 buffer.seek(0)
 st.download_button(label="Download age distribution chart (PDF)",
                    data=buffer,
-                   file_name="age_distribution_by_country.pdf",
+                   file_name=f"age_distribution_by_{statistic_type.replace(' ', '_').lower()}.pdf",
                    mime="application/pdf")
 
 st.caption("Source: WHO Mortality Database")
