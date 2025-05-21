@@ -36,6 +36,10 @@ st.write("## Incidence rate by year")
 
 st.write("Placeholder for line graph.")
 
+p = df.groupby(["YearOfAttendance", "RecordingCountry"]) \
+    .size().unstack()
+
+st.line_chart(p)
 
 st.write("## Incidence rate by other variable")
 
