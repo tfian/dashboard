@@ -29,22 +29,32 @@ def convert_to_csv(df):
 
 df = load_data()
 
-# Display column selector
-
-
 st.write("## Incidence rate by year")
 
-st.write("Placeholder for line graph.")
+col_opts = list(df.columns)
+col_opts.remove("YearOfAttendance")
+opt = st.selectbox("Category", col_opts, key="selextbox-linegraph")  # it has the first option in the list selected, so consider ensuring that "RecordingCountry" is the first item
 
-p = df.groupby(["YearOfAttendance", "RecordingCountry"]) \
+p = df.groupby(["YearOfAttendance", opt]) \
     .size().unstack()
 
 st.line_chart(p)
 
 st.write("## Incidence rate by other variable")
 
-st.write("Placeholder for bar graph.")
+st.write("## Incidence rate by year")
 
+col_opts = list(df.columns)
+col_opts.remove("YearOfAttendance")
+opt = st.selectbox("Category", col_opts, key="selectbox-barchart")  # it has the first option in the list selected, so consider ensuring that "RecordingCountry" is the first item
+
+p = df.groupby(["YearOfAttendance", opt]) \
+    .size().unstack().mean()
+
+st.bar_chart(p)
+
+
+# Display column selector
 
 st.write("## Pivot table")
 
