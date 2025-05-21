@@ -132,28 +132,5 @@ ax3.set_xlabel("Age Group")
 ax3.legend(title="Country")
 st.pyplot(fig3)
 
-# 4. Raw data view
-st.subheader("\U0001F4C3 Filtered Raw Data")
-st.dataframe(filtered_df.reset_index(drop=True))
-
-# Export functions
-st.subheader("\U0001F4BE Export")
-
-def convert_df_to_csv(df):
-    return df.to_csv(index=False).encode('utf-8')
-
-csv_data = convert_df_to_csv(filtered_df)
-st.download_button(label="Download CSV of filtered data",
-                   data=csv_data,
-                   file_name=f'filtered_{statistic_type.replace(" ", "_").lower()}_data.csv',
-                   mime='text/csv')
-
-buffer = BytesIO()
-fig3.savefig(buffer, format="pdf")
-buffer.seek(0)
-st.download_button(label="Download age distribution chart (PDF)",
-                   data=buffer,
-                   file_name=f"age_distribution_by_{statistic_type.replace(' ', '_').lower()}.pdf",
-                   mime="application/pdf")
 
 st.caption("Source: WHO Mortality Database")
