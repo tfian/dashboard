@@ -1,0 +1,234 @@
+---
+title: "Prepare MDS for dashboard"
+output: html_notebook
+---
+
+# Introduction
+
+* Download the MDS and reference population files from the Teams folder.
+* Run this notebook. Maybe also run the second cell where the names of the columns are changed (this cell is currently disabled).
+
+# MDS
+
+```{r}
+library(tidyverse)
+mds = read_csv("/home/kristian/Dropbox/Frivilligt arbejde/EuroSafe/Dataset/MDS 2008 2022 (no labels).csv")
+```
+
+The code below can be used to rename columns to only keep the labelled columns with sensible names.
+
+```{r, eval=FALSE}
+mds %>%
+  select(-one_of(c("ActivityWhenInjured", "AgeCategoryOfPatient", "CountryOfPermanentResidence", "Intent", "MechanismOfInjury", "MonthOfAttendance", "PartOfTheBodyInjured1", "PartOfTheBodyInjured2", "PlaceOfOccurrence", "RecordingCountry", "SexOfPatient", "TreatmentAndFollowUp", "TypeOfInjury1", "TypeOfInjury2"))) %>%
+  rename(
+    ActivityWhenInjured = ActivityWhenInjuredLABEL,
+    AgeCategoryOfPatient = AgeCategoryOfPatientLABEL,
+    CountryOfPermanentResidence = CountryOfPermanentResidenceLABEL,
+    Intent = IntentLABEL,
+    MechanismOfInjury = MechanismOfInjuryLABEL,
+    MonthOfAttendance = MonthOfAttendanceLABEL,
+    PartOfTheBodyInjured1 = PartOfTheBodyInjured1LABEL,
+    PartOfTheBodyInjured2 = PartOfTheBodyInjured2LABEL,
+    PlaceOfOccurrence = PlaceOfOccurrenceLABEL,
+    RecordingCountry = RecordingCountryLABEL,
+    SexOfPatient = SexOfPatientLABEL,
+    TreatmentAndFollowUp = TreatmentAndFollowUpLABEL,
+    TypeOfInjury1 = TypeOfInjury1LABEL,
+    TypeOfInjury2 = TypeOfInjury2LABEL
+  ) %>%
+```
+
+## Keep only countries with stable contributions
+
+We only use data from the following countries as they have stable injury numbers.
+
+* Austria
+* Estonia
+* Finland
+* Lithuania
+* Luxembourg
+* Latvia
+* The Netherlands
+* Portugal
+* Sweden
+
+We only keep injuries between 2018 and 2022.
+
+```{r}
+reliable = mds %>%
+  filter(YearOfAttendance >= 2018 & YearOfAttendance <= 2022) %>%
+  filter(str_detect(RecordingCountry, regex("^(03|12|14|23|24|25|30|33|35)", ignore_case = T)))
+```
+
+```{r}
+rm(mds)
+```
+
+
+## Define home and leisure injuries
+
+Definition: All injuries excluding road traffic injuries, paid work, assault, and self-harm.
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    HomeLeisure = str_detect(MechanismOfInjury, regex("^[^1]")) & str_detect(ActivityWhenInjured, regex("^[^1]")) & str_detect(Intent, regex("^[^23]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(HomeLeisure)
+
+t %>% count(MechanismOfInjury)
+t %>% count(ActivityWhenInjured)
+t %>% count(Intent)
+```
+
+
+## Define road traffic injuries
+
+Definition: All injuries excluding road traffic injuries, paid work, assault, and self-harm.
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    RoadTraffic = str_detect(MechanismOfInjury, regex("^[1]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(RoadTraffic)
+
+t %>% count(MechanismOfInjury)
+```
+
+## Define falls
+
+Definition: All injuries excluding road traffic injuries, paid work, assault, and self-harm.
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    Fall = str_detect(MechanismOfInjury, regex("^[2]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(Fall)
+
+t %>% count(MechanismOfInjury)
+```
+
+## Define sports injuries
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    Sports = str_detect(ActivityWhenInjured, regex("^[2]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(Sports)
+
+t %>% count(ActivityWhenInjured)
+```
+
+
+## Define paid work injuries
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    PaidWork = str_detect(ActivityWhenInjured, regex("^[1]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(PaidWork)
+
+t %>% count(ActivityWhenInjured)
+```
+
+## Define self-harm
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    SelfHarm = str_detect(Intent, regex("^[2]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(SelfHarm)
+
+t %>% count(Intent)
+```
+
+
+
+## Define assault
+
+```{r}
+reliable = reliable %>%
+  mutate(
+    Assault = str_detect(Intent, regex("^[3]"))
+  )
+
+# check that the filtering worked as expected
+t = reliable %>%
+  filter(Assault)
+
+t %>% count(Intent)
+```
+
+## Save the reliable MDS for dashboard
+
+```{r}
+reliable %>% 
+  # convert to integers for easier compatibility with Python
+  mutate(
+    HomeLeisure = as.integer(HomeLeisure),
+    RoadTraffic = as.integer(RoadTraffic),
+    Fall = as.integer(Fall),
+    Sports = as.integer(Sports),
+    PaidWork = as.integer(PaidWork),
+    SelfHarm = as.integer(SelfHarm),
+    Assault = as.integer(Assault)
+  ) %>%
+  write_csv("../data/mds dashboard.csv")
+```
+
+
+# Reference population
+
+Load reference population, rename columns to prepare join from the reliable subset of MDS. We need this to get the labels from the MDS as this will be needed to join reference population into the displayed data in the dashboard.
+
+```{r}
+refpop = read_csv("../data/Reference Population from Teams.csv") %>%
+  pivot_longer(!RecordingCountryCode, names_to = "YearOfAttendance", values_to = "ReferencePopulation") %>%
+  mutate(YearOfAttendance = as.numeric(YearOfAttendance)) %>%
+  drop_na()
+```
+
+Pick the RecordingCountry label from the selected reliable countries, extract the code and join this into the reference population
+
+```{r}
+mds_labels = reliable %>%
+  group_by(RecordingCountry) %>%
+  filter(row_number() == 1) %>%
+  summarise(
+    RecordingCountryCode = as.numeric(str_sub(RecordingCountry, 1, 2)),
+  )
+```
+
+```{r}
+t = left_join(refpop, mds_labels) %>%
+  filter(YearOfAttendance >= 2018 & YearOfAttendance <= 2022) %>%
+  select(!RecordingCountryCode) %>%
+  drop_na()
+```
+
+```{r}
+t %>% write_csv("../data/reference population.csv")
+```
