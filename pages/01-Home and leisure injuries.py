@@ -43,15 +43,25 @@ def load_data():
     return df
 
 @st.cache_data
+def load_reference_population():
+    return pd.read_csv("data/reference population.csv")
+
+@st.cache_data
 def convert_to_csv(df):
    return df.to_csv(index=False).encode('utf-8')
 
 df = load_data()
+refpop = load_reference_population()
+
+
+st.write("This page shows *home and leisure injuries* in for stable countries in recent years in the IDB-MDS. Home and leisure injuries are any injury in the IDB that is not a transport injury, not related to paid work, and not intentional (such as self-harm and assault).")
 
 
 # Line graph
 
-st.write("## Injuries by time")
+st.write("## Injury *numbers* by time")
+
+st.write("Injury *numbers* in the IDB-MDS for selected stable countries and years.")
 
 col_opts = list(df.columns)
 col_opts.remove("YearOfAttendance")
@@ -66,7 +76,9 @@ st.line_chart(p)
 
 # Bar chart
 
-st.write("## Injuries by category")
+st.write("## Injury *numbers* by category")
+
+st.write("Injury *numbers* in the IDB-MDS for selected stable countries and years by category.")
 
 col_opts = list(df.columns)
 col_opts.remove("YearOfAttendance")
@@ -80,10 +92,12 @@ st.bar_chart(p)
 
 # Display column selector
 
-st.write("## Pivot table")
+st.write("## Download")
+
+st.write("Do you need to download data for your own projects or research? Then select the appropriate variables you need below and click download below the table. *Don't forget to download the reference population as well, as this allows you to calculate incidence rates.*")
 
 col_opts = df.columns
-ColOptsFilter = st.multiselect("Select display columns", col_opts, default=["RecordingCountry", "SexOfPatient", "AgeCategoryOfPatient"], max_selections=4)
+ColOptsFilter = st.multiselect("Select columns to download", col_opts, default=["RecordingCountry", "SexOfPatient", "AgeCategoryOfPatient"], max_selections=4)
 
 if len(ColOptsFilter) == 0:
     st.warning("### No columns have been selected")
@@ -117,9 +131,17 @@ df = df.loc[df["Count"] > 0, :]
 st.dataframe(df)
 
 st.download_button(
-    "Download",
+    "Download pivot table",
     convert_to_csv(df),
-    "file.csv",
+    "IDB-MDS Pivot Table.csv",
     "text/csv",
-    key='download-csv'
+    key='download-pivot-csv'
+)
+
+st.download_button(
+    "Download reference population",
+    convert_to_csv(refpop),
+    "IDB-MDS Reference Population.csv",
+    "text/csv",
+    key='download-refpop-csv'
 )
