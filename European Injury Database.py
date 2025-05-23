@@ -5,7 +5,8 @@ import pandas as pd
 
 @st.cache_data
 def load_data_summary():
-    df = pd.read_csv("data/mds dashboard.csv")
+    #df = pd.read_csv("data/mds dashboard.csv", low_memory=False)
+    df = pd.read_csv("data/mds dashboard random.csv")
 
     cols = ["YearOfAttendance", "HomeLeisure", "RoadTraffic", "Fall", "Sports", "PaidWork", "SelfHarm", "Assault"]
     summary = df.loc[:, cols]
@@ -21,6 +22,8 @@ summary = load_data_summary()
 refpop = load_reference_population()
 
 st.write("# Welcome to the European Injury Database")
+
+st.warning('This dashboard shows random data to showcase the functionality of the dashboard. The *actual* MDS will be available in the near future.', icon="⚠️")
 
 st.write("Incidence of injuries in the IDB-MDS per year, only includes selected stable countries and years.")
 

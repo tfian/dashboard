@@ -9,7 +9,8 @@ st.title('Home and leisure injuries')
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/mds dashboard.csv", low_memory=False)
+    #df = pd.read_csv("data/mds dashboard.csv", low_memory=False)
+    df = pd.read_csv("data/mds dashboard random.csv")
 
     # filter out unneeded rows and columns
     cols = [
@@ -56,6 +57,7 @@ refpop = load_reference_population()
 
 st.write("This page shows *home and leisure injuries* in for stable countries in recent years in the IDB-MDS. Home and leisure injuries are any injury in the IDB that is not a transport injury, not related to paid work, and not intentional (such as self-harm and assault).")
 
+st.warning('This dashboard shows random data to showcase the functionality of the dashboard. The *actual* MDS will be available in the near future.', icon="⚠️")
 
 # Line graph
 
